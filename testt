@@ -1,0 +1,115 @@
+cat << 'EOF' > Dockerfile
+FROM python:3.12-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+CMD ["python", "bot.py"]
+EOF
+
+Dockerni bitada uzi ornatib va ishlatadi
+
+
+
+
+Xshb, loyihangizni mutlaqo noldan boshlab, Docker yordamida to‘liq ishga tushirish uchun barcha qadamlarni ketma-ketlikda jamlaymiz.
+
+1-qadam: Maxfiy ma'lumotlar uchun .env faylini yaratish
+Terminalga quyidagi kodni to‘liqligicha nusxalab tashlang va Enter tugmasini bosing. Bu fayl parollar va bot tokenini xavfsiz saqlaydi:
+
+Bash
+cat << 'EOF' > .env
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=my_secure_password
+POSTGRES_DB=uydanuyga_db
+
+BOT_TOKEN=8811084936:AAGDkcLRg1IsvrO4K7zURjZsZ4SOkQmhElw
+ADMIN_ID=8371308176
+EOF
+2-qadam: Universal Dockerfile yaratish
+Python muhitini avtomat sozlash uchun ushbu universal kodni terminalga tashlang:
+
+Bash
+cat << 'EOF' > Dockerfile
+FROM python:3.12-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+CMD ["python", "bot.py"]
+EOF
+3-qadam: docker-compose.yml faylini yangilash
+Bot va ma'lumotlar bazasini bir-biriga bog‘laydigan arxitekturani yaratish uchun ushbu kodni terminalga kiritasiz:
+
+Bash
+cat << 'EOF' > docker-compose.yml
+services:
+  db:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  bot:
+    build: .
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - BOT_TOKEN=${BOT_TOKEN}
+      - ADMIN_ID=${ADMIN_ID}
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+
+volumes:
+  postgres_data:
+EOF
+4-qadam: Botingizdagi config.py ni tekshirish
+PyCharm darchasidan config.py (yoki bot parametrlari turgan fayl) ichiga kirib, DATABASE_URL qismida localhost emas, db yozilganiga ishonch hosil qiling:
+
+Python
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@db:5432/postgres")
+5-qadam: Loyihani ishga tushirish (Fonda)
+Hamma fayllar tayyor bo‘lgach, loyihani birinchi marta yig‘ish (build) va fonda ishga tushirish buyrug‘ini berasiz:
+
+Bash
+docker compose up -d --build
+6-qadam: Loyihani to‘xtatish (Xohlagan paytingizda)
+Ishingiz tugab, kompyuter xotirasini bo‘shatmoqchi bo‘lsangiz:
+
+Bash
+docker compose down
+Mana shu 6 ta qadam bilan loyihangiz Docker muhitida professional darajada to‘liq ishlaydi!
+
+
+
+docker compose start
+docker compose up
+
+
+
+GinXob
+
+git init
+git add .
+git commit -m "first commit"
+git branch -M main
+git remote add origin https://github.com/isamatovismail-svg/UydanUygaBot.git
+git push -u origin main
+
+
+
+
+
+
+
+git config --global user.email "isamatovismail@gmail.com"
